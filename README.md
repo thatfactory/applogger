@@ -77,7 +77,7 @@ Associate the dependency with your target:
 ```swift
 targets: [
     .target(
-        name: "YouTarget",
+        name: "YourTarget",
         dependencies: [
             .product(
                 name: "AppLogger",
