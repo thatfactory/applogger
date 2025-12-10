@@ -66,14 +66,25 @@ Use Xcode's [built-in support for SPM](https://developer.apple.com/documentation
 In your `Package.swift`, add `AppLogger` as a dependency:
 ```swift
 dependencies: [
-  .package(url: "https://github.com/thatfactory/applogger", from: "1.0.0")
-],
+    .package(
+        url: "https://github.com/thatfactory/applogger",
+        from: "0.1.0"
+    )
+]
 ```
 
 Associate the dependency with your target:
 ```swift
 targets: [
-  .target(name: "App", dependencies: ["AppLogger"])
+    .target(
+        name: "YouTarget",
+        dependencies: [
+            .product(
+                name: "AppLogger",
+                package: "applogger"
+            )
+        ]
+    )
 ]
 ```
 
