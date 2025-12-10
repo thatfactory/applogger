@@ -4,7 +4,7 @@ import XCTest
 final class AppLoggerTests: XCTestCase {
     func empty() {}
 
-    static var allTests = [
+    static let allTests = [
         ("empty", empty),
     ]
 }
