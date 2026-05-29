@@ -1,0 +1,70 @@
+---
+
+name: "Debug App Token Tag Push"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read   # workflow's own GITHUB_TOKEN --- irrelevant, the App token is what's tested
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint R/W installation token from App
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.secrets }}
+
+      - name: Inspect token's effective permissions
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          echo "=== /installation/repositories ==="
+          gh api /installation/repositories --jq '.repositories[] | {full_name, permissions}'
+          echo ""
+          echo "=== Repo metadata via this token ==="
+          gh api repos/thatfactory/applogger --jq '{name, default_branch, permissions}'
+
+      - name: Checkout (persist-credentials false, same as Blacklane)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Configure git credentials (same flow as Blacklane testflight)
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config --global credential.helper store
+          echo "https://x-access-token:${APP_TOKEN}@github.com" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
+          git config --global user.email "debug@thatfactory.invalid"
+          git config --global user.name "App Token Debug"
+
+      - name: Create + push throwaway tag
+        run: |
+          TAG="debug-app-token-$(date -u +%Y%m%d-%H%M%S)"
+          echo "Creating tag: $TAG"
+          git tag -a "$TAG" -m "Debug tag --- testing App token write access"
+          echo "Pushing tag..."
+          git push origin "$TAG"
+          echo "::notice::Tag push succeeded --- App token has effective write access"
+
+      - name: Cleanup remote tag (best effort)
+        if: always()
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          TAG=$(git tag --list 'debug-app-token-*' | tail -1 || true)
+          if [ -n "$TAG" ]; then
+            git push origin --delete "$TAG" 2>&1 || echo "Tag deletion failed (non-fatal)"
+          fi
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f ~/.git-credentials
