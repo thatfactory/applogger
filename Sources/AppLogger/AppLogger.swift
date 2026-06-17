@@ -1,10 +1,3 @@
-//
-//  AppLogger.swift
-//  AppLogger
-//
-//  Created by Fernando Fernandes on 29.06.20.
-//
-
 import Foundation
 import os
 
@@ -24,6 +17,7 @@ public struct AppLogger {
         public static let subsystem = Bundle.main.bundleIdentifier ?? "AppLogger"
         public static let category = "default"
         public static let isPrivate = false
+        public static let level: AppLogLevel = .default
     }
 
     // MARK: - Private Properties
@@ -52,21 +46,16 @@ public extension AppLogger {
     
     /// Logs a string interpolation at the given level.
     ///
-    /// Notice that `.debug` won't work with simulators (nothing is shown in the Console app for this level),
-    /// but works fine with physical devices. This is a known issue:
-    /// https://stackoverflow.com/a/58814535/584548
-    ///
     /// - Parameters:
-    ///   - level: `OSLogType`; default is `.debug`.
+    ///   - level: `AppLogLevel`; default is `.default`.
     ///   - message: The `String` to be logged.
     ///   - isPrivate: Sets the `OSLogPrivacy` to be used by the function. `true` means `.private`;
     ///   `false` means `.public`. The default is `false`.
-    func log(level: OSLogType = .debug, _ message: String, isPrivate: Bool = Defaults.isPrivate) {
+    func log(level: AppLogLevel = Defaults.level, _ message: String, isPrivate: Bool = Defaults.isPrivate) {
         if isPrivate {
-            logger.log(level: level, "\(message, privacy: .private)")
+            logger.log(level: level.osLogType, "\(message, privacy: .private)")
         } else {
-            logger.log(level: level, "\(message, privacy: .public)")
+            logger.log(level: level.osLogType, "\(message, privacy: .public)")
         }
     }
 }
-
