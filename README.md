@@ -9,9 +9,9 @@
 </p>
 
 # AppLogger
-Wrapper around Apple's new Swift logging APIs, particularly [Logger](https://developer.apple.com/documentation/os/logger).
+Wrapper around Apple's Swift unified logging APIs, particularly [Logger](https://developer.apple.com/documentation/os/logger).
 
-Provides a basic `public`/`private` logging functionality at a given level (e.g. `debug` (default)).
+Provides `public` and `private` logging with an app-facing `AppLogLevel` abstraction, so clients do not need to import `os` to choose a log level. The default level is `.default`, which maps to `OSLogType.default` and shows up in Console.app without requiring debug filtering.
 
 For more information, please refer to this WWDC20 video: [Explore logging in Swift](https://developer.apple.com/wwdc20/10168)
 
@@ -27,14 +27,16 @@ For more information, please refer to this WWDC20 video: [Explore logging in Swi
 ```swift
 import AppLogger
 
-// Create an instance of the "AppLogger with default options.
-let logger = AppLogger()
+let logger = AppLogger(subsystem: "com.example.app", category: "network")
 
 // Log public information.
-logger.log("iPhone screen size: \(screenSize)")
+logger.log("Request started")
 
 // Log private information.
-logger.log("Username: \(username); Password: \(password)", isPrivate: true)
+logger.log(level: .info, "Request headers: \(headers)", isPrivate: true)
+
+// Set custom levels.
+logger.log(level: .error, "Request failed: \(error.localizedDescription)")
 ```
 
 ### Defaults
@@ -43,6 +45,18 @@ public struct Defaults {
     public static let subsystem = Bundle.main.bundleIdentifier ?? "AppLogger"
     public static let category = "default"
     public static let isPrivate = false
+    public static let level: AppLogLevel = .default
+}
+```
+
+### AppLogLevel
+```swift
+public enum AppLogLevel {
+    case debug
+    case info
+    case `default`
+    case error
+    case fault
 }
 ```
 
@@ -52,7 +66,7 @@ public struct Defaults {
 ![Xcode Sample](https://i.imgur.com/6TNaUQo.png)
 
 #### macOS Console app
-⚠️ Make sure you have enabled `Action / Include Info/Debug Messages` in the **Console app** in order to see `debug messages` from your app.
+`.default`, `.error`, and `.fault` logs are shown by default in the **Console app**. If you emit `debug` logs, enable `Action / Include Info/Debug Messages` to display them.
 
 ![Console App](https://i.imgur.com/XBGOpLP.png)
 
