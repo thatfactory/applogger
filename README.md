@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://developer.apple.com/swift/"><img alt="Swift" src="https://img.shields.io/badge/Swift-6.3-ea7a50.svg?logo=swift&logoColor=white"></a>
+  <a href="https://developer.apple.com/swift/"><img alt="Swift" src="https://img.shields.io/badge/Swift-6.4-ea7a50.svg?logo=swift&logoColor=white"></a>
   <a href="https://developer.apple.com/xcode/"><img alt="Xcode" src="https://img.shields.io/badge/Xcode-27-50ace8.svg?logo=xcode&logoColor=white"></a>
+  <a href="https://en.wikipedia.org/wiki/List_of_Apple_operating_systems"><img alt="Platforms" src="https://img.shields.io/badge/anyAppleOS-27-lightgrey.svg?logo=apple&logoColor=white"></a>
   <a href="https://developer.apple.com/documentation/xcode/swift-packages"><img alt="SPM" src="https://img.shields.io/badge/SPM-ready-b68f6a.svg?logo=gitlfs&logoColor=white"></a>
-  <a href="https://en.wikipedia.org/wiki/List_of_Apple_operating_systems"><img alt="Platforms" src="https://img.shields.io/badge/Platforms-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS%20%7C%20watchOS-lightgrey.svg?logo=apple&logoColor=white"></a>
   <a href="https://en.wikipedia.org/wiki/MIT_License"><img alt="License" src="https://img.shields.io/badge/License-MIT-67ac5b.svg?logo=googledocs&logoColor=white"></a>
   <a href="https://github.com/thatfactory/applogger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/thatfactory/applogger/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/thatfactory/applogger/actions/workflows/release.yml"><img alt="Release" src="https://github.com/thatfactory/applogger/actions/workflows/release.yml/badge.svg"></a>
@@ -14,14 +14,6 @@ Wrapper around Apple's Swift unified logging APIs, particularly [Logger](https:/
 Provides `public` and `private` logging with an app-facing `AppLogLevel` abstraction, so clients do not need to import `os` to choose a log level. The default level is `.default`, which maps to `OSLogType.default` and shows up in Console.app without requiring debug filtering.
 
 For more information, please refer to this WWDC20 video: [Explore logging in Swift](https://developer.apple.com/wwdc20/10168)
-
-## Supported platforms
- - iOS 14+
- - macOS 11+ (BigSur+)
- - Mac Catalyst 14.0+
- - tvOS 14+
- - watchOS 7+
- - Xcode 12.0+
 
 ## Usage
 ```swift
@@ -85,7 +77,7 @@ In your `Package.swift`, add `AppLogger` as a dependency:
 dependencies: [
     .package(
         url: "https://github.com/thatfactory/applogger",
-        from: "0.1.0"
+        from: "1.0.0"
     )
 ]
 ```
