@@ -3,6 +3,7 @@
   <a href="https://developer.apple.com/xcode/"><img alt="Xcode" src="https://img.shields.io/badge/Xcode-27-50ace8.svg?logo=xcode&logoColor=white"></a>
   <a href="https://en.wikipedia.org/wiki/List_of_Apple_operating_systems"><img alt="Platforms" src="https://img.shields.io/badge/anyAppleOS-26%2B-lightgrey.svg?logo=apple&logoColor=white"></a>
   <a href="https://developer.apple.com/documentation/xcode/swift-packages"><img alt="SPM" src="https://img.shields.io/badge/SPM-ready-b68f6a.svg?logo=gitlfs&logoColor=white"></a>
+  <a href="https://thatfactory.github.io/applogger/documentation/applogger/"><img alt="DocC" src="https://img.shields.io/badge/DocC-documentation-0288D1.svg?logo=bookstack&logoColor=white"></a>
   <a href="https://en.wikipedia.org/wiki/MIT_License"><img alt="License" src="https://img.shields.io/badge/License-MIT-67ac5b.svg?logo=googledocs&logoColor=white"></a>
   <a href="https://github.com/thatfactory/applogger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/thatfactory/applogger/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/thatfactory/applogger/actions/workflows/release.yml"><img alt="Release" src="https://github.com/thatfactory/applogger/actions/workflows/release.yml/badge.svg"></a>
@@ -13,7 +14,7 @@ Wrapper around Apple's Swift unified logging APIs, particularly [Logger](https:/
 
 Provides `public` and `private` logging with an app-facing `AppLogLevel` abstraction, so clients do not need to import `os` to choose a log level. The default level is `.default`, which maps to `OSLogType.default` and shows up in Console.app without requiring debug filtering.
 
-For more information, please refer to this WWDC20 video: [Explore logging in Swift](https://developer.apple.com/wwdc20/10168)
+For the complete API reference and usage guide, see the [AppLogger DocC documentation](https://thatfactory.github.io/applogger/documentation/applogger/).
 
 ## Usage
 ```swift
@@ -29,27 +30,6 @@ logger.log(level: .info, "Request headers: \(headers)", isPrivate: true)
 
 // Set custom levels.
 logger.log(level: .error, "Request failed: \(error.localizedDescription)")
-```
-
-### Defaults
-```swift
-public struct Defaults {
-    public static let subsystem = Bundle.main.bundleIdentifier ?? "AppLogger"
-    public static let category = "default"
-    public static let isPrivate = false
-    public static let level: AppLogLevel = .default
-}
-```
-
-### AppLogLevel
-```swift
-public enum AppLogLevel {
-    case debug
-    case info
-    case `default`
-    case error
-    case fault
-}
 ```
 
 ### Output

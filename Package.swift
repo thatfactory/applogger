@@ -16,11 +16,14 @@ let package = Package(
             targets: ["AppLogger"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
+    ],
     targets: [
         .target(
             name: "AppLogger",
-            dependencies: []
+            dependencies: [],
+            path: "Sources"
         ),
         .testTarget(
             name: "AppLoggerTests",
