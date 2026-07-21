@@ -20,7 +20,8 @@ let package = Package(
     targets: [
         .target(
             name: "AppLogger",
-            dependencies: []
+            dependencies: [],
+            path: "Sources"
         ),
         .testTarget(
             name: "AppLoggerTests",
