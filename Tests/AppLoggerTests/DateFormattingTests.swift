@@ -12,4 +12,11 @@ import Testing
 
         #expect(date.formattedLogTimestamp(locale: Locale(identifier: "en_GB"), timeZone: TimeZone(secondsFromGMT: 0) ?? .autoupdatingCurrent) == "12/05 21:15:04")
     }
+
+    @Test
+    func preservesDayMonthOrderForMonthFirstLocales() {
+        let date = Date(timeIntervalSince1970: 1778620504)
+
+        #expect(date.formattedLogTimestamp(locale: Locale(identifier: "en_US"), timeZone: TimeZone(secondsFromGMT: 0) ?? .autoupdatingCurrent) == "12/05 21:15:04")
+    }
 }

@@ -52,6 +52,20 @@ public enum AppLogLevel {
 }
 ```
 
+### Logging formatters
+
+AppLogger includes public formatters for consistent, concise logging output:
+
+```swift
+let startedAt = Date()
+logger.log("Started at \(startedAt.formattedLogTimestamp())")
+
+let elapsed: TimeInterval = 334
+logger.log("Completed in \(elapsed.formattedLogDuration())") // 5m34s
+```
+
+`Date.formattedLogTimestamp(locale:timeZone:)` always uses `dd/MM HH:mm:ss` ordering. It uses the current locale and time zone by default; pass explicit values for deterministic output. `TimeInterval.formattedLogDuration()` rounds to whole seconds, clamps negative values to zero, formats hours/minutes/seconds compactly, and returns `0s` for non-finite values.
+
 ### Output
 
 #### Xcode console

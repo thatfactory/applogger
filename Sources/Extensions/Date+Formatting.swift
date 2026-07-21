@@ -7,19 +7,10 @@ public extension Date {
         locale: Locale = .autoupdatingCurrent,
         timeZone: TimeZone = .autoupdatingCurrent
     ) -> String {
-        var dateStyle = Date.FormatStyle()
-            .day(.twoDigits)
-            .month(.twoDigits)
-            .locale(locale)
-        dateStyle.timeZone = timeZone
-
-        var timeStyle = Date.FormatStyle()
-            .hour()
-            .minute()
-            .second()
-            .locale(locale)
-        timeStyle.timeZone = timeZone
-
-        return "\(formatted(dateStyle)) \(formatted(timeStyle))"
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "dd/MM HH:mm:ss"
+        return formatter.string(from: self)
     }
 }

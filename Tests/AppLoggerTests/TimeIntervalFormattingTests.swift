@@ -23,4 +23,16 @@ import Testing
     func formatsHoursAndMinutes() {
         #expect(TimeInterval(7320).formattedLogDuration() == "2h2m")
     }
+
+    @Test
+    func formatsNonFiniteDurationsAsZero() {
+        #expect(TimeInterval.infinity.formattedLogDuration() == "0s")
+        #expect((-TimeInterval.infinity).formattedLogDuration() == "0s")
+        #expect(TimeInterval.nan.formattedLogDuration() == "0s")
+    }
+
+    @Test
+    func clampsVeryLargeDurations() {
+        #expect(TimeInterval.greatestFiniteMagnitude.formattedLogDuration().contains("h"))
+    }
 }

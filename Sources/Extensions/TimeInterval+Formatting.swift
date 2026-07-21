@@ -4,7 +4,11 @@ public extension TimeInterval {
     /// Formats a duration for concise logging output.
     nonisolated
     func formattedLogDuration() -> String {
-        let clampedSeconds = max(0, Int(self.rounded()))
+        guard isFinite else { return "0s" }
+
+        // Leave headroom because Double(Int.max) rounds to an out-of-range value.
+        let maxRepresentableSeconds = Double(Int.max) - 1024
+        let clampedSeconds = Int(min(max(0, rounded()), maxRepresentableSeconds))
         let hours = clampedSeconds / 3600
         let minutes = (clampedSeconds % 3600) / 60
         let seconds = clampedSeconds % 60
