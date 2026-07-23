@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.0.8] - 2026-07-23
+
+### Added
+
+- Consumer guidance for keeping `AgentGuidelines/` tracked while collapsing synchronized files in GitHub pull-request diffs with `.gitattributes`.
+- Pull-request conventions for isolated subtree commits, explicit version notes, central review links, and continued CI validation.
+
+## [0.0.7] - 2026-07-23
+
+### Added
+
+- Shared logging ownership, subsystem, package emoji, message design, privacy, testing, and filtering guidance.
+- Logging pointers for application development, Swift packages, and consumer instruction templates.
+
+## [0.0.6] - 2026-07-22
+
+### Added
+
+- Generic Redux store contracts, state/action, service-boundary, projection, and middleware guidance.
+- Generic GitHub Actions workflow, self-hosted runner, build strategy, and failure-investigation guidance.
+- Shared documentation conventions and test-tag/mock guidance.
+
 ## [0.0.5] - 2026-07-21
 
 ### Added
