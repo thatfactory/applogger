@@ -20,3 +20,6 @@ Read the relevant shared guides before changing the package:
 - Tests live under `Tests/AppLoggerTests/`.
 
 Keep the package UI-agnostic and preserve its public API's minimal scope.
+## Codex review scope
+
+For consumer pull requests, do not substantively review `AgentGuidelines/**` after exact tagged-tree provenance has been verified. Verify its `VERSION`, compare its tree with the matching central tag, and verify the required `.gitattributes` rule. If provenance does not match exactly, review the subtree contents and stop the merge. Report substantive guideline feedback against the central `agent-guidelines` pull request.

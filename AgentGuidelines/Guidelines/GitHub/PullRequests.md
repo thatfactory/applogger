@@ -9,6 +9,10 @@ Use this guide whenever creating, reviewing, updating, or merging a GitHub pull 
 - Run the relevant local validation and document anything that could not be run.
 - Open the pull request without auto-merge and keep it unmerged while automated or agent review is pending. Use draft state only when configured reviewers also run on drafts.
 
+## Consumer subtree review scope
+
+When reviewing a consumer pull request, do not review or comment on files under `AgentGuidelines/**` after exact tagged-tree provenance has been verified. The subtree is a tracked, synchronized copy marked `linguist-generated`; substantive guideline changes are reviewed in the central `thatfactory/agent-guidelines` pull request. Verify `AgentGuidelines/VERSION`, compare the subtree tree with the matching central tag (for example with `git subtree split --prefix=AgentGuidelines HEAD` and a tree comparison after fetching that tag), and verify the required `.gitattributes` rule. If provenance does not match exactly, review the subtree contents and stop the merge. Report substantive guideline feedback against the central pull request instead.
+
 ## Review gate
 
 Opening a pull request starts review; it does not authorize merging it.
@@ -20,7 +24,8 @@ Opening a pull request starts review; it does not authorize merging it.
 5. If feedback should not be implemented, reply in the original thread with a concise technical reason.
 6. Reply to implemented feedback with what changed and where.
 7. Resolve a thread only after its concern has been addressed or explicitly declined.
-8. Recheck the pull request immediately before merge for late comments and check-state changes.
+8. After addressing review comments, update the pull-request description so it matches the current implementation, validation, and any remaining limitations.
+9. Recheck the pull request immediately before merge for late comments and check-state changes.
 
 When replying with a commit reference, write the commit hash as raw text without backticks (for example, the hash 185c04f should remain 185c04f). GitHub then auto-links the hash to the commit.
 
