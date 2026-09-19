@@ -1,6 +1,15 @@
-// swift-tools-version:6.3.3
+// swift-tools-version:6.4
 
 import PackageDescription
+
+let strictSwiftSettings: [SwiftSetting] = [
+    .treatAllWarnings(as: .error),
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("InferIsolatedConformances"),
+    .enableUpcomingFeature("InternalImportsByDefault"),
+    .enableUpcomingFeature("MemberImportVisibility"),
+    .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+]
 
 let package = Package(
     name: "AppLogger",
@@ -29,5 +38,10 @@ let package = Package(
             name: "AppLoggerTests",
             dependencies: ["AppLogger"]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
+
+for target in package.targets {
+    target.swiftSettings = strictSwiftSettings
+}

@@ -1,4 +1,5 @@
 import XCTest
+import os
 
 @testable import AppLogger
 

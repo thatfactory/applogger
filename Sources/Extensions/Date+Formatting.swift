@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 extension Date {
     /// Formats the date as `dd/MM HH:mm:ss` for concise logging output.
