@@ -18,15 +18,11 @@ For this policy, a third-party dependency is externally maintained source or bin
 
 Tooling dependencies explicitly required by these shared guidelines, such as documentation or build plugins used only by tooling, are pre-approved for that documented role. They must not be linked into or shipped with product runtime targets unless the repository owner separately approves and documents that use.
 
+CocoaPods and Carthage are forbidden in every ThatFactory project and are not eligible for the exception process above. Use Swift Package Manager for package dependencies.
+
 ## Guidelines version
 
 Before changing a project, verify that it uses the latest released version of `agent-guidelines`. Check the project's `AgentGuidelines/VERSION` against the latest release, update the subtree or equivalent when it is behind, and read the updated applicable guides before starting implementation. This check is manual and must be performed at the beginning of each project task.
-
-## Repository automation
-
-Use Swift for new repository-owned executable scripts in Swift-focused applications, games, and packages. Prefer the Swift standard library and Foundation so the automation uses the same native toolchain and dependency policy as the codebase. Do not introduce Python, Ruby, JavaScript, or another scripting-language runtime for new validation, transformation, migration, or maintenance logic.
-
-An existing non-Swift script may remain only as a narrow, documented exception; its existence does not authorize new non-Swift automation. The central `Scripts/swift_format.sh` command wrapper is the retained exception for invoking Xcode's `swift-format` modes.
 
 ## Guidelines changes in pull requests
 
@@ -47,6 +43,14 @@ If the skill is not discoverable in a subtree consumer, read and follow its [SKI
 
 For subtree consumers, the audit runs `AgentGuidelines/Scripts/validate_consumer_setup.swift` to detect drift in the root Code Review and Documentation Maintenance contracts, Codex subtree-review scope, `.gitattributes`, local guide links, and repository skill symlink. When the root `AGENTS.md` links the shared Swift-format guide, the validator also requires the shared configuration symlinks and strict non-mutating CI adoption. User-level global Codex instructions are outside this repository audit.
 
+## Post-merge cleanup
+
+After an in-scope feature pull request merges, switch the original checkout back to the repository's primary branch, update it from its upstream with a fast-forward-only pull, and delete the merged local feature branch. Confirm the remote feature branch is absent when the repository deletes merged branches automatically. Do this before declaring the feature workflow complete so stale branches do not accumulate.
+
+Never discard unrelated changes to perform cleanup. If the original checkout is dirty, another worktree still uses the feature branch, the merge did not complete, or the primary branch cannot fast-forward, leave the branch intact and report the exact blocker. Do not use force deletion merely to hide an unmerged branch.
+
 ## Logging
 
 Applications own their orchestration, lifecycle, and product-domain diagnostics. Follow the shared [logging guide](Logging.md) and rely on each dependency to log its own implementation. Do not duplicate or reformat package-internal operations in the application log.
+
+Treat observability as part of implementing or changing stateful, asynchronous, fallible, or lifecycle-oriented behavior. Before handoff, trace those boundaries and verify that privacy-safe AppLogger events distinguish the outcomes needed to diagnose the behavior in context. Merely adding the dependency or linking its product is not sufficient. Keep pure value and utility code silent when it has no meaningful event boundary, and record that deliberate decision in the handoff rather than manufacturing noisy logs.
