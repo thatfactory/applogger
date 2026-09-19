@@ -53,7 +53,8 @@ The common package baseline is Swift, Xcode, Platforms, License, and CI. Add opt
 - Use descriptive `alt` text. Preserve a repository's established Xcode badge convention when the label intentionally records the last verified Xcode version.
 - Prefer dynamic Updated and Revision badges backed by repository history or releases so maintainers do not edit dates and versions by hand.
 - Do not advertise a platform, integration, package manager, or agent that the repository does not support.
-- Keep the repository's license in a root `LICENSE` file when reuse or redistribution is permitted. A README license heading is optional; the badge is a summary, not the license grant.
+- Keep the repository's license in a root `LICENSE` file when reuse or redistribution is permitted.
+- Retain the README license badge when the standard badge set applies, but do not add a dedicated License heading or license-description section to a package README. GitHub already presents the repository license beside the README, and the badge provides the summary without duplicating license prose.
 - Do not add a license to an existing repository without the owner's explicit choice of terms.
 
 ## Package boundaries
@@ -67,6 +68,47 @@ The common package baseline is Swift, Xcode, Platforms, License, and CI. Add opt
 - New Swift packages must start on the latest supported Swift language and toolchain version. Before adding a major package capability to an older package, plan and complete the required Swift/toolchain modernization first.
 - Put sources under `Sources/<Target>/` and tests under `Tests/<Target>Tests/`.
 - Keep resources in the target that owns them and use the package bundle for lookup.
+
+## Compiler settings baseline
+
+Host Xcode build settings are not a substitute for package configuration. Each package must express its applicable compiler policy in `Package.swift` so independently invoked SwiftPM builds, Xcode builds, and dependency builds receive the same strictness. This baseline is the SwiftPM representation of the applicable compiler policy in [Xcode project settings](Xcode/ProjectSettings.md), not a mechanical copy of Xcode build-setting names.
+
+New packages must use the newest supported Swift tools version. Every package must use the newest stable Swift language mode supported by the selected toolchain, currently Swift 6, preferably owned once at package level:
+
+```swift
+swiftLanguageModes: [.v6]
+```
+
+Do not repeat `.swiftLanguageMode(.v6)` target by target when package-level ownership is sufficient. A target may specialize the language mode only under a documented package exception. An older manifest that cannot express this baseline must first modernize its tools version; `.treatAllWarnings(as:)` requires PackageDescription 6.2 or later.
+
+Every locally defined target that compiles Swift and for which SwiftPM exposes `swiftSettings`, including test targets and other applicable Swift target kinds, must unconditionally use the typed PackageDescription API:
+
+```swift
+swiftSettings: [
+    .treatAllWarnings(as: .error),
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("InferIsolatedConformances"),
+    .enableUpcomingFeature("InternalImportsByDefault"),
+    .enableUpcomingFeature("MemberImportVisibility"),
+    .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+]
+```
+
+A setting restricted only to Debug, Release, a platform, or another build condition does not satisfy this package-wide baseline unless a documented exception covers that scope. Do not use `unsafeFlags` for warning handling when the typed API is available.
+
+When a locally compiled target contains C or Objective-C, require `cSettings: [.treatAllWarnings(as: .error)]`. Where C++ settings apply, require `cxxSettings: [.treatAllWarnings(as: .error)]`. Pure-Swift packages do not need C or C++ settings, and packages must not introduce `-Werror` through `unsafeFlags` when the typed APIs are available.
+
+Swift 6 language mode enables complete concurrency checking unconditionally, so a Swift 6 package must not retain any explicit `StrictConcurrency` opt-in. Remove `.enableUpcomingFeature("StrictConcurrency")`, `.enableExperimentalFeature("StrictConcurrency")`, and `StrictConcurrency=complete` spellings instead of treating one representation as special. For an older package, modernize to the required language mode instead of preserving the legacy mode with a compatibility flag.
+
+Do not invent a direct SwiftPM equivalent for `SWIFT_APPROACHABLE_CONCURRENCY`. Its applicable opt-in language behavior is represented by the individual upcoming features above, including `InferIsolatedConformances` and `NonisolatedNonsendingByDefault`.
+
+`.defaultIsolation(MainActor.self)` is intentionally not part of this shared package baseline. Reusable packages must express actor isolation according to their public and internal API semantics rather than inherit an application's default isolation policy. A package may choose a default isolation as an intentional package-specific architectural decision, but the completion audit must not add or require it merely for Xcode-project parity.
+
+Require the listed upcoming features on every applicable locally defined Swift target, but not on binary or system-library targets that SwiftPM does not compile as Swift source or package plug-in targets for which `Target.plugin(...)` does not expose `swiftSettings`. Reevaluate the list whenever the selected Xcode/Swift toolchain or language mode changes. When a feature becomes unconditional in the selected language mode, remove its `.enableUpcomingFeature(...)` declaration from packages, remove it from this baseline, and update the audit contract in the same change. Retain no redundant upcoming features merely for historical consistency because they can produce diagnostics under warnings-as-errors.
+
+Metal warnings-as-errors and application `Info.plist` export-compliance declarations have no package equivalent in this baseline. SwiftPM has no first-class Metal warning setting, and a reusable package does not own its consuming application's generated `Info.plist`.
+
+Accept a deviation only when the nearest applicable `AGENTS.md`, or durable documentation linked from it, records the exact package compiler setting or feature, affected package and targets, concrete incompatibility, replacement or omission, engineering impact, compensating validation where applicable, and condition for revisiting or removing the exception. Do not infer an exception from the existing `Package.swift`.
 
 ## Logging
 

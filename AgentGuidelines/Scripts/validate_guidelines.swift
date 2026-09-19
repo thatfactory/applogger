@@ -16,6 +16,7 @@ let editorConfiguration = root.appendingPathComponent("Configurations/Swift/.edi
 let swiftFormatScript = root.appendingPathComponent("Scripts/swift_format.sh")
 let swiftFormatGuideline = root.appendingPathComponent("Guidelines/Swift/SwiftFormat.md")
 let localizationGuideline = root.appendingPathComponent("Guidelines/Localization.md")
+let appStoreGuideline = root.appendingPathComponent("Guidelines/AppStore.md")
 let xcodeProjectSettingsGuideline = root.appendingPathComponent("Guidelines/Xcode/ProjectSettings.md")
 let localizationPreparationScript = root.appendingPathComponent("Scripts/prepare_localizable_symbols.swift")
 let localizationValidationScript = root.appendingPathComponent("Scripts/validate_string_catalogs.swift")
@@ -29,9 +30,12 @@ let stringCatalogInspectionScript = root.appendingPathComponent(
     ".agents/skills/agent-guidelines-audit/scripts/check_xcstrings_inspection.swift"
 )
 let developmentGuideline = root.appendingPathComponent("Guidelines/Development.md")
+let cicdGuideline = root.appendingPathComponent("Guidelines/CICD.md")
 let documentationGuideline = root.appendingPathComponent("Guidelines/Documentation.md")
 let packagesGuideline = root.appendingPathComponent("Guidelines/Packages.md")
 let agentsTemplate = root.appendingPathComponent("Templates/AGENTS.md")
+let gitignoreTemplate = root.appendingPathComponent("Templates/.gitignore")
+let gitignoreGuideline = root.appendingPathComponent("Guidelines/Git/IgnoreFiles.md")
 
 let expectedSwiftFormatRules: [String: Bool] = [
     "AllPublicDeclarationsHaveDocumentation": false,
@@ -107,6 +111,13 @@ let upcomingFeatureSettings = [
     "SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY",
     "SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT",
     "SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION",
+]
+let packageUpcomingFeatures = [
+    "ExistentialAny",
+    "InferIsolatedConformances",
+    "InternalImportsByDefault",
+    "MemberImportVisibility",
+    "NonisolatedNonsendingByDefault",
 ]
 
 /// Returns all regular-expression matches in a string.
@@ -266,6 +277,7 @@ func validateReadmeContract(_ errors: inout [String]) {
         "--require-swift-format": "explicit Swift-format adoption validation",
         "documentation-maintenance contract": "documentation contract synchronization",
         "external-dependency contract": "external dependency contract synchronization",
+        "runtime-observability contract": "runtime observability contract synchronization",
     ]
     for (value, description) in required where !contents.contains(value) {
         errors.append("README.md: missing \(description): '\(value)'")
@@ -508,6 +520,10 @@ func validateXcodeProjectSettingsGuideline(_ errors: inout [String]) {
         "SWIFT_APPROACHABLE_CONCURRENCY = YES": "approachable concurrency baseline",
         "SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor": "default actor isolation baseline",
         "SWIFT_STRICT_CONCURRENCY = complete": "strict concurrency baseline",
+        "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO": "export-compliance build-setting baseline",
+        "ITSAppUsesNonExemptEncryption`](https://developer.apple.com/": "official export-compliance key reference",
+        "built `Info.plist`": "built export-compliance verification",
+        "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES": "documented non-exempt encryption exception",
         "newest stable Swift language mode": "future-facing Swift language policy",
         "Enable each feature that remains opt-in": "language-mode-aware upcoming-feature policy",
         "warnings-as-errors can turn that diagnostic into a build failure": "redundant upcoming-feature safety rule",
@@ -516,6 +532,10 @@ func validateXcodeProjectSettingsGuideline(_ errors: inout [String]) {
         "unit-test and UI-test targets": "test-target effective-value audit",
         "nearest applicable `AGENTS.md`": "local exception source",
         "condition for removing or revisiting the exception": "exception lifecycle",
+        "## Swift package parity": "Swift package parity section",
+        "../Packages.md#compiler-settings-baseline": "Swift package baseline cross-reference",
+        "Whenever this Xcode project baseline adds, removes, or changes a Swift or Clang compiler policy":
+            "package applicability maintenance rule",
     ]
     for (value, description) in required where !contents.contains(value) {
         errors.append("Guidelines/Xcode/ProjectSettings.md: missing \(description): '\(value)'")
@@ -523,6 +543,60 @@ func validateXcodeProjectSettingsGuideline(_ errors: inout [String]) {
     for setting in upcomingFeatureSettings where !contents.contains(setting) {
         errors.append(
             "Guidelines/Xcode/ProjectSettings.md: missing Xcode 27 upcoming-feature inventory entry: '\(setting)'")
+    }
+}
+
+/// Validates the Swift package compiler-settings contract.
+func validatePackageCompilerSettingsGuideline(_ errors: inout [String]) {
+    guard let contents = readText(packagesGuideline, errors: &errors) else {
+        return
+    }
+    let required = [
+        "## Compiler settings baseline": "compiler-settings baseline section",
+        "Xcode/ProjectSettings.md": "Xcode baseline cross-reference",
+        "swiftLanguageModes": "package-level Swift language mode",
+        ".treatAllWarnings(as: .error)": "typed warnings-as-errors policy",
+        "Swift 6 language mode enables complete concurrency checking unconditionally":
+            "Swift 6 strict-concurrency explanation",
+        ".enableUpcomingFeature(\"StrictConcurrency\")":
+            "upcoming StrictConcurrency redundancy rule",
+        ".enableExperimentalFeature(\"StrictConcurrency\")":
+            "experimental StrictConcurrency redundancy rule",
+        "StrictConcurrency=complete": "explicit StrictConcurrency redundancy rule",
+        "`.defaultIsolation(MainActor.self)` is intentionally not part":
+            "default MainActor isolation exclusion",
+        "package plug-in targets for which `Target.plugin(...)` does not expose `swiftSettings`":
+            "unsupported plug-in target exclusion",
+        "Retain no redundant upcoming features": "redundant upcoming-feature prohibition",
+        "condition for revisiting or removing the exception": "package-setting exception lifecycle",
+    ]
+    for (value, description) in required where !contents.contains(value) {
+        errors.append("Guidelines/Packages.md: missing package compiler policy \(description): '\(value)'")
+    }
+    for feature in packageUpcomingFeatures where !contents.contains(".enableUpcomingFeature(\"\(feature)\")") {
+        errors.append("Guidelines/Packages.md: missing required SwiftPM upcoming feature '\(feature)'")
+    }
+}
+
+/// Validates the shared App Store metadata workflow.
+func validateAppStoreGuideline(_ errors: inout [String]) {
+    guard let contents = readText(appStoreGuideline, errors: &errors) else {
+        return
+    }
+    let required = [
+        "app-store-connect-mcp": "MCP source",
+        "AppStore/": "repository metadata root",
+        "validate_repository": "repository validation",
+        "plan_metadata_changes": "metadata planning",
+        "plan_screenshot_changes": "screenshot planning",
+        "apply_plan": "immutable plan application",
+        "get_operation_status": "uncertain-outcome recovery",
+        "noOp: true": "remote reconciliation",
+        ".appstore-connect-mcp/": "ignored operational state",
+        "does not authorize submitting": "submission boundary",
+    ]
+    for (value, description) in required where !contents.contains(value) {
+        errors.append("Guidelines/AppStore.md: missing \(description): '\(value)'")
     }
 }
 
@@ -535,9 +609,38 @@ func validateExternalDependencyPolicy(_ errors: inout [String]) {
             "explicit approval from the repository owner": "repository-owner approval gate",
             "durable repository documentation": "durable exception record",
             "Tooling dependencies explicitly required by these shared guidelines": "tooling-only exception",
+            "CocoaPods and Carthage are forbidden": "forbidden package managers",
+            "Use Swift Package Manager for package dependencies": "Swift Package Manager requirement",
+            "## Post-merge cleanup": "post-merge cleanup section",
+            "fast-forward-only pull": "safe primary-branch update",
+            "delete the merged local feature branch": "merged local branch removal",
+            "Confirm the remote feature branch is absent": "remote branch cleanup verification",
         ]
         for (value, description) in required where !contents.contains(value) {
             errors.append("Guidelines/Development.md: missing \(description): '\(value)'")
+        }
+    }
+    if let contents = readText(cicdGuideline, errors: &errors) {
+        let required = [
+            "## Tooling and automation": "CI/CD tooling policy section",
+            "## Private repository dependencies": "private repository dependency authentication section",
+            "Fastlane is forbidden": "forbidden delivery tooling",
+            "xcode-cloud-mcp": "first-party Xcode Cloud tooling",
+            "app-store-connect-mcp": "first-party App Store tooling",
+            "required behavior cannot be implemented": "non-Swift capability-gap threshold",
+            "missing Swift capability": "documented non-Swift exception",
+            "actions/create-github-app-token@v3": "short-lived GitHub App token workflow",
+            "client-id:": "current GitHub App client identifier input",
+            "permission-contents: read": "read-only private dependency permission",
+            "GIT_CONFIG_KEY_0": "process-level Git authentication",
+            "GIT_CONFIG_VALUE_0: https://github.com/": "GitHub HTTPS rewrite source",
+            "complete subprocess tree as privileged": "credential-bearing subprocess trust boundary",
+            "isolated disposable or ephemeral self-hosted runner": "untrusted-code runner isolation",
+            "This trust rule is event-independent": "event-independent credential boundary",
+            "pull_request_target": "untrusted pull-request credential boundary",
+        ]
+        for (value, description) in required where !contents.contains(value) {
+            errors.append("Guidelines/CICD.md: missing \(description): '\(value)'")
         }
     }
     if let contents = readText(packagesGuideline, errors: &errors) {
@@ -545,6 +648,10 @@ func validateExternalDependencyPolicy(_ errors: inout [String]) {
             "[external dependency policy](Development.md#external-dependencies)": "package dependency policy pointer",
             "must not introduce or conceal a third-party runtime dependency": "first-party package boundary",
             "guideline-mandated tooling dependency": "DocC tooling exception",
+            "root `LICENSE` file": "root license-file retention",
+            "Retain the README license badge": "README license-badge retention",
+            "do not add a dedicated License heading or license-description section":
+                "README license-section prohibition",
         ]
         for (value, description) in required where !contents.contains(value) {
             errors.append("Guidelines/Packages.md: missing \(description): '\(value)'")
@@ -571,6 +678,7 @@ func validateAuditSkill(_ errors: inout [String]) {
         "lint-strict": "strict Swift-format CI audit",
         "AppLogger": "AppLogger integration audit",
         "Logging.md": "shared Logging guide reference",
+        "Dependency declaration and target linkage alone": "lifecycle observability coverage audit",
         "## Audit documentation consistency": "documentation drift audit",
         "Known stale documentation blocks completion": "stale documentation stopping rule",
         "## Audit documentation formatting": "documentation formatting audit",
@@ -586,6 +694,9 @@ func validateAuditSkill(_ errors: inout [String]) {
         "SWIFT_UPCOMING_FEATURE_": "future-facing upcoming-feature audit",
         "SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor": "actor-isolation project audit",
         "SWIFT_VERSION": "Swift language-version project audit",
+        "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO": "export-compliance project audit",
+        "## Audit App Store metadata": "App Store metadata audit",
+        "noOp: true": "App Store remote reconciliation audit",
         "xcodebuild -showBuildSettings": "effective target build-setting inspection",
         "nearest applicable `AGENTS.md`": "project-setting exception lookup",
         "## Audit localization": "localization audit",
@@ -598,9 +709,34 @@ func validateAuditSkill(_ errors: inout [String]) {
         "pull-request description": "durable pull-request evidence summary",
         "A local wrapper may": "consumer localization-wrapper boundary",
         "new repository-owned executable scripts": "native Swift script audit",
+        "Templates/.gitignore": "shared gitignore template comparison",
+        "# Project-specific: <rationale>": "project-specific gitignore exception marker",
+        "git check-ignore -v": "gitignore behavior verification",
+        "git ls-files": "tracked-file safety check",
+        "CocoaPods or Carthage": "forbidden package-manager audit",
+        "Guidelines/CICD.md": "shared CI/CD guide reference",
+        "fastlane adoption": "forbidden delivery-tooling audit",
+        "missing Swift capability": "non-Swift script exception audit",
+        "## Audit Swift package settings": "Swift package-settings audit",
+        "Guidelines/Packages.md#compiler-settings-baseline": "shared package compiler-settings guide reference",
+        "Package.swift": "package manifest discovery",
+        "swift package --package-path <package-root> dump-package": "evaluated manifest inspection",
+        "swiftLanguageModes": "package language-mode audit",
+        ".treatAllWarnings(as: .error)": "package warnings-as-errors audit",
+        ".enableUpcomingFeature(...)": "package upcoming-feature audit",
+        "complete strict concurrency as supplied by the language mode": "Swift 6 strict-concurrency handling",
+        ".enableUpcomingFeature(\"StrictConcurrency\")": "upcoming StrictConcurrency removal audit",
+        ".enableExperimentalFeature(\"StrictConcurrency\")": "experimental StrictConcurrency removal audit",
+        "StrictConcurrency=complete": "explicit StrictConcurrency removal audit",
+        ".defaultIsolation(MainActor.self)": "default MainActor isolation exclusion",
+        "package plug-in targets": "unsupported plug-in target exclusion",
+        "package-setting failure": "package-setting exception lookup",
     ]
     for (value, description) in required where !contents.contains(value) {
         errors.append(".agents/skills/agent-guidelines-audit/SKILL.md: missing \(description): '\(value)'")
+    }
+    for feature in packageUpcomingFeatures where !contents.contains(feature) {
+        errors.append(".agents/skills/agent-guidelines-audit/SKILL.md: missing package feature audit '\(feature)'")
     }
     validateExecutable(markdownWrappingScript, description: "Markdown wrapping checker", errors: &errors)
     validateExecutable(stringCatalogInspectionScript, description: "String Catalog inspection checker", errors: &errors)
@@ -614,12 +750,43 @@ func validateAuditSkill(_ errors: inout [String]) {
             "AgentGuidelines/Guidelines/Development.md": "Development.md pointer",
             "BEGIN THATFACTORY DOCUMENTATION MAINTENANCE CONTRACT v1": "documentation-maintenance contract",
             "BEGIN THATFACTORY EXTERNAL DEPENDENCY CONTRACT v1": "external-dependency contract",
+            "BEGIN THATFACTORY RUNTIME OBSERVABILITY CONTRACT v1": "runtime-observability contract",
             "AgentGuidelines/Guidelines/Documentation.md": "Documentation.md pointer",
             "## Stack": "Stack section",
         ]
         for (value, description) in requiredTemplateValues where !template.contains(value) {
             errors.append("Templates/AGENTS.md: missing \(description)")
         }
+    }
+}
+
+/// Validates the reusable ignore template and its shared reconciliation policy.
+func validateGitignoreGuidance(_ errors: inout [String]) {
+    guard let template = readText(gitignoreTemplate, errors: &errors) else { return }
+    let activePatterns = template.split(separator: "\n").map(String.init)
+    let requiredPatterns = [
+        ".DS_Store", "xcuserdata/", "/build/", "/DerivedData/", "/.build/", "/Packages/",
+        ".swiftpm/configuration/registries.json", "node_modules/", "dist/", "coverage/", "__pycache__/",
+        ".venv/", ".env", "!.env.example", ".netrc", ".appstore-connect-mcp/", ".devspace/",
+        "/public-check/",
+    ]
+    for pattern in requiredPatterns where !activePatterns.contains(pattern) {
+        errors.append("Templates/.gitignore: missing required pattern '\(pattern)'")
+    }
+    for forbidden in ["Package.resolved", "*.xcodeproj", "*.xcworkspace", ".swiftpm/"]
+    where activePatterns.contains(forbidden) {
+        errors.append("Templates/.gitignore: must not ignore authored or lockfile path '\(forbidden)'")
+    }
+    for forbiddenPrefix in ["Carthage/", "fastlane/", "Pods/"]
+    where activePatterns.contains(where: { $0.hasPrefix(forbiddenPrefix) }) {
+        errors.append("Templates/.gitignore: must not include forbidden tooling pattern '\(forbiddenPrefix)'")
+    }
+    guard let guideline = readText(gitignoreGuideline, errors: &errors) else { return }
+    for required in [
+        "active `.gitignore` patterns", "# Project-specific: <rationale>", "git check-ignore -v", "git ls-files",
+        "Do not remove it or silently accept it",
+    ] where !guideline.contains(required) {
+        errors.append("Guidelines/Git/IgnoreFiles.md: missing ignore reconciliation policy '\(required)'")
     }
 }
 
@@ -638,9 +805,12 @@ func main() -> Int32 {
     validateSwiftFormatGuideline(&errors)
     validateDocumentationGuideline(&errors)
     validateLocalizationGuideline(&errors)
+    validateAppStoreGuideline(&errors)
     validateLocalizationScripts(&errors)
     validateXcodeProjectSettingsGuideline(&errors)
+    validatePackageCompilerSettingsGuideline(&errors)
     validateExternalDependencyPolicy(&errors)
+    validateGitignoreGuidance(&errors)
     validateExecutable(consumerSetupScript, description: "consumer setup validator", errors: &errors)
     validateAuditSkill(&errors)
     if !errors.isEmpty {

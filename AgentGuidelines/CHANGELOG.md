@@ -2,6 +2,59 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.0.33] - 2026-09-19
+
+### Added
+
+- Added a Swift Package compiler-settings baseline aligned with the applicable Xcode project warning, Swift language-mode, concurrency, and upcoming-feature policies.
+- Added completion-audit enforcement for compiler settings in checked-in Swift packages.
+
+### Changed
+
+- Required future Xcode compiler-policy changes to evaluate and update Swift Package Manager parity when an equivalent package setting is applicable.
+
+## [0.0.32] - 2026-09-13
+
+### Changed
+
+- Made runtime observability an explicit consumer contract for changed stateful, asynchronous, fallible, and lifecycle behavior, while preserving silence for pure values and utilities without meaningful diagnostic boundaries.
+- Extended the completion audit to require useful privacy-safe AppLogger outcome coverage instead of accepting dependency declaration and target linkage alone.
+
+## [0.0.31] - 2026-09-13
+
+### Added
+
+- Added a least-privilege GitHub App authentication pattern for workflows that resolve private sibling repositories, including short-lived read-only tokens, process-scoped Git configuration, exact repository selection, and fork pull-request and self-hosted-runner security boundaries.
+
+## [0.0.30] - 2026-09-12
+
+### Changed
+
+- Prohibited dedicated License headings and conventional standalone license-description paragraphs in Swift package READMEs while retaining root license files and standard license badges.
+
+## [0.0.29] - 2026-09-12
+
+### Added
+
+- Added a reusable `.gitignore` template for Xcode, Swift Package Manager, and supported development tooling, plus shared guidance for reviewed project-specific exceptions.
+
+### Changed
+
+- Extended the completion audit to reconcile consumer `.gitignore` files with the shared template and escalate undocumented extra patterns for a repository-owner decision.
+- Prohibited CocoaPods and Carthage under the external-dependency policy, and prohibited fastlane under CI/CD guidance while requiring first-party Swift or ThatFactory delivery tooling and narrowing Python or shell automation to documented Swift capability gaps.
+
+## [0.0.28] - 2026-09-09
+
+### Added
+
+- Added a shared version-controlled App Store metadata and app-store-connect-mcp synchronization workflow, including scoped planning, immutable application, reconciliation, screenshot, credential, and submission boundaries.
+- Added `ITSAppUsesNonExemptEncryption = NO` to the Xcode application baseline and completion audit, with a documented-exception path for apps that ship non-exempt encryption.
+- Added mandatory post-merge cleanup of merged local feature branches after returning to an updated primary branch.
+
+### Changed
+
+- Linked localization guidance to the shared App Store metadata workflow while keeping product voice, locales, and concrete storefront content in consumer repositories.
+
 ## [0.0.27] - 2026-09-05
 
 ### Fixed

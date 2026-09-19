@@ -74,6 +74,47 @@ func initializeRepository(at root: URL) throws {
     try git("config", "user.name", "Agent", in: root)
 }
 
+func createConsumerFixture(at root: URL, isPackage: Bool, readme: String? = nil) throws {
+    try fileManager.createSymbolicLink(
+        at: root.appendingPathComponent("AgentGuidelines"), withDestinationURL: repositoryRoot)
+    try fileManager.copyItem(
+        at: repositoryRoot.appendingPathComponent("Templates/AGENTS.md"),
+        to: root.appendingPathComponent("AGENTS.md"))
+    try write("AgentGuidelines/** linguist-generated\n", to: root.appendingPathComponent(".gitattributes"))
+    let skillParent = root.appendingPathComponent(".agents/skills")
+    try fileManager.createDirectory(at: skillParent, withIntermediateDirectories: true)
+    try fileManager.createSymbolicLink(
+        at: skillParent.appendingPathComponent("agent-guidelines-audit"),
+        withDestinationURL: repositoryRoot.appendingPathComponent(".agents/skills/agent-guidelines-audit")
+    )
+    try fileManager.createSymbolicLink(
+        at: root.appendingPathComponent(".swift-format"),
+        withDestinationURL: repositoryRoot.appendingPathComponent("Configurations/Swift/.swift-format"))
+    try fileManager.createSymbolicLink(
+        at: root.appendingPathComponent(".editorconfig"),
+        withDestinationURL: repositoryRoot.appendingPathComponent("Configurations/Swift/.editorconfig"))
+    try write(
+        """
+        name: CI
+        on:
+          pull_request:
+          push:
+            branches: [main]
+        jobs:
+          swift-format:
+            steps:
+              - run: AgentGuidelines/Scripts/swift_format.sh lint-strict Package.swift Sources Tests
+        """ + "\n",
+        to: root.appendingPathComponent(".github/workflows/ci.yml")
+    )
+    if isPackage {
+        try write("// swift-tools-version: 6.0\n", to: root.appendingPathComponent("Package.swift"))
+    }
+    if let readme {
+        try write(readme, to: root.appendingPathComponent("README.md"))
+    }
+}
+
 func localization(_ value: String, state: String = "translated") -> String {
     #"{"stringUnit":{"state":"\#(state)","value":"\#(value)"}}"#
 }
@@ -102,6 +143,262 @@ let tests: [(String, () throws -> Void)] = [
                 let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
                 try require(!result.succeeded, "configuration drift unexpectedly passed")
                 try require(result.output.contains("NeverForceUnwrap must be false"), result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing package compiler policy",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Packages.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: ".treatAllWarnings(as: .error)", with: ".warningsAsErrors()")
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing package warning policy unexpectedly passed")
+                try require(result.output.contains("missing package compiler policy"), result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects package upcoming-feature drift",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Packages.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: ".enableUpcomingFeature(\"NonisolatedNonsendingByDefault\")",
+                    with: ".enableUpcomingFeature(\"ExampleFeature\")"
+                )
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "package upcoming-feature drift unexpectedly passed")
+                try require(
+                    result.output.contains(
+                        "missing required SwiftPM upcoming feature 'NonisolatedNonsendingByDefault'"),
+                    result.output
+                )
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing package plug-in exclusion",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Packages.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: "package plug-in targets for which `Target.plugin(...)` does not expose `swiftSettings`",
+                    with: "other package targets"
+                )
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing package plug-in exclusion unexpectedly passed")
+                try require(
+                    result.output.contains("missing package compiler policy unsupported plug-in target exclusion"),
+                    result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing experimental StrictConcurrency rule",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Packages.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: ".enableExperimentalFeature(\"StrictConcurrency\")",
+                    with: ".enableExperimentalFeature(\"ExampleFeature\")"
+                )
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing experimental StrictConcurrency rule unexpectedly passed")
+                try require(
+                    result.output.contains(
+                        "missing package compiler policy experimental StrictConcurrency redundancy rule"), result.output
+                )
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing upcoming StrictConcurrency rule",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Packages.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: ".enableUpcomingFeature(\"StrictConcurrency\")",
+                    with: ".enableUpcomingFeature(\"ExampleFeature\")"
+                )
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing upcoming StrictConcurrency rule unexpectedly passed")
+                try require(
+                    result.output.contains(
+                        "missing package compiler policy upcoming StrictConcurrency redundancy rule"), result.output
+                )
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing explicit StrictConcurrency rule",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Packages.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: "StrictConcurrency=complete",
+                    with: "StrictConcurrency=minimal"
+                )
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing explicit StrictConcurrency rule unexpectedly passed")
+                try require(
+                    result.output.contains(
+                        "missing package compiler policy explicit StrictConcurrency redundancy rule"), result.output
+                )
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing Xcode package-parity maintenance",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/Xcode/ProjectSettings.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: "../Packages.md#compiler-settings-baseline", with: "package-policy")
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing Xcode package-parity maintenance unexpectedly passed")
+                try require(result.output.contains("missing Swift package baseline cross-reference"), result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing package audit section",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let skill = fixture.appendingPathComponent(".agents/skills/agent-guidelines-audit/SKILL.md")
+                var contents = try String(contentsOf: skill, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: "## Audit Swift package settings", with: "## Inspect Swift manifests")
+                try write(contents, to: skill)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing package audit section unexpectedly passed")
+                try require(result.output.contains("missing Swift package-settings audit"), result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects package audit behavior drift",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let skill = fixture.appendingPathComponent(".agents/skills/agent-guidelines-audit/SKILL.md")
+                var contents = try String(contentsOf: skill, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: "swift package --package-path <package-root> dump-package",
+                    with: "inspect the manifest"
+                )
+                try write(contents, to: skill)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "package audit behavior drift unexpectedly passed")
+                try require(result.output.contains("missing evaluated manifest inspection"), result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects missing observability adoption guidance",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let readme = fixture.appendingPathComponent("README.md")
+                var contents = try String(contentsOf: readme, encoding: .utf8)
+                contents = contents.replacingOccurrences(of: "runtime-observability contract", with: "runtime contract")
+                try write(contents, to: readme)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "missing observability adoption guidance unexpectedly passed")
+                try require(
+                    result.output.contains("missing runtime observability contract synchronization"), result.output)
+            }
+        }
+    ),
+    (
+        "repository validator rejects private dependency authentication drift",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let guideline = fixture.appendingPathComponent("Guidelines/CICD.md")
+                var contents = try String(contentsOf: guideline, encoding: .utf8)
+                contents = contents.replacingOccurrences(
+                    of: "isolated disposable or ephemeral self-hosted runner",
+                    with: "self-hosted runner")
+                try write(contents, to: guideline)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "private dependency authentication drift unexpectedly passed")
+                try require(
+                    result.output.contains("missing untrusted-code runner isolation"),
+                    result.output
+                )
+            }
+        }
+    ),
+    (
+        "repository validator rejects gitignore template drift",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let template = fixture.appendingPathComponent("Templates/.gitignore")
+                var contents = try String(contentsOf: template, encoding: .utf8)
+                contents = contents.replacingOccurrences(of: "node_modules/\n", with: "")
+                try write(contents, to: template)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "gitignore template drift unexpectedly passed")
+                try require(
+                    result.output.contains("Templates/.gitignore: missing required pattern 'node_modules/'"),
+                    result.output
+                )
+            }
+        }
+    ),
+    (
+        "repository validator rejects forbidden tooling in gitignore template",
+        {
+            try withTemporaryDirectory { temporary in
+                let fixture = temporary.appendingPathComponent("repository")
+                try copyRepositoryFixture(to: fixture)
+                let template = fixture.appendingPathComponent("Templates/.gitignore")
+                var contents = try String(contentsOf: template, encoding: .utf8)
+                contents += "fastlane/test_output/\n"
+                try write(contents, to: template)
+                let result = try run([fixture.appendingPathComponent("Scripts/validate_guidelines.swift").path])
+                try require(!result.succeeded, "forbidden tooling pattern unexpectedly passed")
+                try require(
+                    result.output.contains("must not include forbidden tooling pattern 'fastlane/'"),
+                    result.output
+                )
             }
         }
     ),
@@ -428,6 +725,101 @@ let tests: [(String, () throws -> Void)] = [
                 ] {
                     try require(result.output.contains(expected), "missing diagnostic \(expected): \(result.output)")
                 }
+            }
+        }
+    ),
+    (
+        "consumer validator rejects package README License headings",
+        {
+            for readme in [
+                "# Package\n\n## License\n", "# Package\n\n#### lIcEnSe ####\n",
+                "# Package\n\nLicense\n-------\n", "# Package\n\nLICENSE\n=======\n",
+            ] {
+                try withTemporaryDirectory { root in
+                    try createConsumerFixture(at: root, isPackage: true, readme: readme)
+                    let result = try run([
+                        script("Scripts/validate_consumer_setup.swift"), "--consumer-root", root.path,
+                    ])
+                    try require(!result.succeeded, "package License heading unexpectedly passed")
+                    try require(result.output.contains("must not contain a dedicated License heading"), result.output)
+                }
+            }
+        }
+    ),
+    (
+        "consumer validator rejects standalone package README license prose",
+        {
+            try withTemporaryDirectory { root in
+                try createConsumerFixture(
+                    at: root,
+                    isPackage: true,
+                    readme: "# Example\n\nExample is available under the MIT license. See [LICENSE](LICENSE).\n"
+                )
+                let result = try run([
+                    script("Scripts/validate_consumer_setup.swift"), "--consumer-root", root.path,
+                ])
+                try require(!result.succeeded, "standalone package license prose unexpectedly passed")
+                try require(
+                    result.output.contains("must not contain a standalone license-description paragraph"),
+                    result.output
+                )
+            }
+        }
+    ),
+    (
+        "consumer validator accepts package license badge and absent README",
+        {
+            try withTemporaryDirectory { root in
+                try createConsumerFixture(
+                    at: root,
+                    isPackage: true,
+                    readme: """
+                        # Example
+
+                        ![License](https://img.shields.io/badge/License-MIT-green.svg)
+
+                        See [LICENSE](LICENSE) when verifying redistribution terms.
+
+                        ````markdown
+                        ```markdown
+                        ## License section example
+
+                        Example is available under the MIT license. See [LICENSE](LICENSE).
+                        ```
+                        ````
+
+                        ~~~text
+                        # License
+                        ~~~
+                        """ + "\n"
+                )
+                let result = try run([
+                    script("Scripts/validate_consumer_setup.swift"), "--consumer-root", root.path,
+                ])
+                try require(result.succeeded, result.output)
+            }
+            try withTemporaryDirectory { root in
+                try createConsumerFixture(at: root, isPackage: true)
+                let result = try run([
+                    script("Scripts/validate_consumer_setup.swift"), "--consumer-root", root.path,
+                ])
+                try require(result.succeeded, result.output)
+            }
+        }
+    ),
+    (
+        "consumer validator limits README license policy to package roots",
+        {
+            try withTemporaryDirectory { root in
+                try createConsumerFixture(at: root, isPackage: false, readme: "# App\n\n## License\n")
+                try write(
+                    "# License\n\nStandalone documentation may discuss licensing.\n",
+                    to: root.appendingPathComponent("Documentation/README.md")
+                )
+                let result = try run([
+                    script("Scripts/validate_consumer_setup.swift"), "--consumer-root", root.path,
+                ])
+                try require(result.succeeded, result.output)
             }
         }
     ),
